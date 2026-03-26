@@ -1,33 +1,39 @@
-# bootloader
-i386 bootloaders dreamed by BingAI
-To compile this code with gcc in linux, you need to do the following steps:
+# i386 Bootloader Project
 
-- Compile the C code with gcc using the `-fno-PIC -fomit-frame-pointer -ffreestanding -m16 -Os -c` flags. These flags will disable position-independent code, omit the frame pointer, indicate that there is no standard library, generate 16-bit code, and optimize for space. For example: `gcc -fno-PIC -fomit-frame-pointer -ffreestanding -m16 -Os -c test.c -o test.o`
-- Compile the assembly code with nasm using the `-f elf32` flag. This flag will generate a 32-bit ELF object file. For example: `nasm -f elf32 hw.asm -o hw.o`
-- Link the object files with ld using a linker script that specifies the output format as binary and the starting address as 0x7c00. The linker script can look like this:
+This project contains two functional x86 bootloaders and a demonstration kernel.
 
-```ld
-OUTPUT_FORMAT (binary)
-SECTIONS {
-  . = 0x7c00;
-  .text : {
-    *(.text)
-  }
-  .data : {
-    *(.data)
-  }
-  .bss : {
-    *(.bss)
-  }
-}
+## Components
+
+1.  **Basic Bootloader (`boot.asm`)**: A NASM assembly bootloader that loads a simple C kernel from the second sector of the disk using BIOS LBA extensions.
+2.  **Linux Bootloader (`boot_linux.asm`)**: A specialized bootloader that implements the Linux Boot Protocol. It enables the A20 line, enters "Unreal Mode" to load the kernel to the 1MB mark, initializes the Zero Page (boot parameters), and jumps to a 32-bit or 64-bit Linux `bzImage` kernel.
+3.  **Simple Kernel (`kernel_c.c`)**: A 16-bit C kernel that prints "Hello from Kernel!" to the COM1 serial port and VGA buffer.
+
+## Build and Run
+
+### Basic Bootloader and Kernel
+To build the basic bootloader and demo kernel:
+```bash
+./build.sh
+```
+To run in QEMU:
+```bash
+qemu-system-i386 -hda disk.img -serial stdio -display none
 ```
 
-- The command line for linking could appear as: `ld -T linker.ld hw.o test.o -o hw.bin`
-- The output file hw.bin will be a raw binary file that can be written to a disk or run in an emulator.
+### Linux Bootloader
+To build a disk image with a real Linux kernel (automatically downloads a generic kernel if not present):
+```bash
+./build_linux.sh
+```
+To run in QEMU:
+```bash
+qemu-system-i386 -hda linux_disk.img -m 512 -serial stdio -display none
+```
+*Note: The Linux bootloader is verified to reach the kernel's setup code and begin initialization.*
 
-¹²³
-
-Source: Conversation with Bing, 6/15/2023
-(1) gcc - Calling C code from a bootloader - Stack Overflow. https://stackoverflow.com/questions/9692787/calling-c-code-from-a-bootloader.
-(2) gcc - Compile an asm bootloader with external c code - Stack Overflow. https://stackoverflow.com/questions/47249699/compile-an-asm-bootloader-with-external-c-code.
-(3) Downloading GCC - GNU Project - GCC, the GNU Compiler Collection. https://gcc.gnu.org/install/download.html.
+## Requirements
+- `nasm`
+- `gcc` (with 16-bit support, usually standard on Linux)
+- `binutils` (ld)
+- `qemu-system-x86`
+- `dd`, `wget` (for build scripts)
