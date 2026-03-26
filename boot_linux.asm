@@ -1,8 +1,10 @@
 [bits 16]
 [org 0x7C00]
 
+; Refined Linux Bootloader with Command Line Support
+; Fits in 512 bytes
+
 _start:
-    ; Standard Initialization
     xor ax, ax
     mov ds, ax
     mov es, ax
@@ -36,6 +38,7 @@ _start:
     mov ah, 0x42
     mov dl, [dr]
     int 0x13
+    jc $
 
     ; 2. Magic Check
     mov ax, 0x9000
@@ -49,7 +52,7 @@ _start:
     jnz .ok
     mov cl, 4
 .ok:
-    add ecx, 2 ; Kernel LBA
+    add ecx, 2
     mov [d_k_l], ecx
 
     ; 4. Load Kernel to 1MB
@@ -78,10 +81,18 @@ _start:
     xor di, di
     mov cx, 1024
     rep stosb
+
+    ; Mandatory fields
     mov byte [es:0x210], 0xFF
     mov byte [es:0x211], 0x81
     mov word [es:0x224], 0xDE00
-    mov dword [es:0x228], 0x98000
+
+    ; COMMAND LINE SUPPORT
+    mov dword [es:0x228], 0x98000 ; cmd_line_ptr
+    mov si, cmd
+    mov di, 0x8000
+    mov cx, 32
+    rep movsb
 
     ; 6. Jump
     mov dl, [dr]
@@ -92,6 +103,7 @@ _start:
     mov sp, 0xFFFE
     jmp 0x9020:0000
 
+cmd db "console=ttyS0 earlyprintk=ttyS0", 0
 dr db 0
 gdt: dq 0, 0x00CF92000000FFFF
 gptr: dw 15
