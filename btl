@@ -1,0 +1,45 @@
+#!/bin/busybox sh
+# btl - Boot Tool Linux (BusyBox Compatible)
+
+usage() {
+    busybox printf "Usage: btl [COMMAND] [ARGS]\n"
+    busybox printf "Commands:\n"
+    busybox printf "  image-create [file] [boot] [kernel]  Create bootable disk image (20MB)\n"
+    busybox printf "  boot-install [target] [boot]         Install bootloader to MBR\n"
+    busybox printf "  kernel-update [target] [kernel]      Update kernel at LBA 1\n"
+    exit 1
+}
+
+[ $# -lt 1 ] && usage
+
+CMD=$1
+shift
+
+case "$CMD" in
+    image-create)
+        [ $# -ne 3 ] && usage
+        IMG=$1; BOOT=$2; KERN=$3
+        busybox printf "Creating 20MB image %s...\n" "$IMG"
+        busybox dd if=/dev/zero of="$IMG" bs=1M count=20 status=none
+        busybox dd if="$BOOT" of="$IMG" bs=512 count=1 conv=notrunc status=none
+        busybox dd if="$KERN" of="$IMG" bs=512 seek=1 conv=notrunc status=none
+        busybox printf "Image created successfully.\n"
+        ;;
+    boot-install)
+        [ $# -ne 2 ] && usage
+        TGT=$1; BOOT=$2
+        busybox printf "Installing %s to %s...\n" "$BOOT" "$TGT"
+        busybox dd if="$BOOT" of="$TGT" bs=512 count=1 conv=notrunc status=none
+        busybox printf "Installation complete.\n"
+        ;;
+    kernel-update)
+        [ $# -ne 2 ] && usage
+        TGT=$1; KERN=$2
+        busybox printf "Updating kernel in %s...\n" "$TGT"
+        busybox dd if="$KERN" of="$TGT" bs=512 seek=1 conv=notrunc status=none
+        busybox printf "Update complete.\n"
+        ;;
+    *)
+        usage
+        ;;
+esac

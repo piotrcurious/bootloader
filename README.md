@@ -1,41 +1,41 @@
 # i386 Bootloader Project
 
-This project contains two functional x86 bootloaders and a demonstration kernel.
+This project contains two functional x86 bootloaders, a demonstration kernel, and a BusyBox-compatible management tool.
 
 ## Components
 
 1.  **Basic Bootloader (`boot.asm`)**: A NASM assembly bootloader that loads a simple C kernel from the second sector of the disk using BIOS LBA extensions.
-2.  **Linux Bootloader (`boot_linux.asm`)**: A specialized bootloader that implements the Linux Boot Protocol. It enables the A20 line, enters "Unreal Mode" to load the kernel to the 1MB mark, initializes the Zero Page (boot parameters), and supports a custom **boot command line**.
+2.  **Linux Bootloader (`boot_linux.asm`)**: A specialized bootloader that implements the Linux Boot Protocol. It enables the A20 line, enters "Unreal Mode" to load the kernel to the 1MB mark, and supports custom boot command lines.
 3.  **Simple Kernel (`kernel_c.c`)**: A 16-bit C kernel that prints "Hello from Kernel!" to the COM1 serial port.
+4.  **Boot Tool (`btl`)**: A BusyBox-compatible shell script for managing disk images and bootloader installations.
 
-## Boot Command Line Support
+## Boot Management Tool (`btl`)
 
-The Linux bootloader (`boot_linux.asm`) supports passing a command line to the kernel. You can modify the command line by changing the `cmd` string in `boot_linux.asm`:
+The `btl` script is designed for maximum portability using BusyBox.
 
-```nasm
-cmd db "console=ttyS0 earlyprintk=ttyS0", 0
+### Usage
+```bash
+./btl image-create [file] [bootloader.bin] [kernel.bin]  # Create a bootable 10MB image
+./btl boot-install [device/file] [bootloader.bin]      # Write bootloader to MBR
+./btl kernel-update [device/file] [kernel.bin]          # Update kernel at LBA 1
 ```
 
 ## Build and Run
 
-### Basic Bootloader and Kernel
+### Manual Build
 To build the basic bootloader and demo kernel:
 ```bash
 ./build.sh
 ```
-To run in QEMU:
+
+### Creating Images with `btl`
 ```bash
-qemu-system-i386 -hda disk.img -serial stdio -display none
+./btl image-create my_disk.img boot.bin kernel.bin
 ```
 
-### Linux Bootloader
-To build a disk image with a real Linux kernel (automatically downloads a generic kernel if not present):
+### Running in QEMU
 ```bash
-./build_linux.sh
-```
-To run in QEMU:
-```bash
-qemu-system-i386 -hda linux_disk.img -m 512 -serial stdio -display none
+qemu-system-i386 -hda my_disk.img -serial stdio -display none
 ```
 
 ## Requirements
@@ -43,4 +43,4 @@ qemu-system-i386 -hda linux_disk.img -m 512 -serial stdio -display none
 - `gcc` (with 16-bit support)
 - `binutils` (ld)
 - `qemu-system-x86`
-- `dd`
+- `busybox` (for `btl`)
