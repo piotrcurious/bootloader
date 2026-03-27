@@ -1,12 +1,15 @@
 #!/bin/busybox sh
 # btl - Boot Tool Linux (BusyBox Compatible)
 
+CMDLINE_OFFSET=384 # 0x180
+
 usage() {
     busybox printf "Usage: btl [COMMAND] [ARGS]\n"
     busybox printf "Commands:\n"
     busybox printf "  image-create [file] [boot] [kernel]  Create bootable disk image (20MB)\n"
     busybox printf "  boot-install [target] [boot]         Install bootloader to MBR\n"
     busybox printf "  kernel-update [target] [kernel]      Update kernel at LBA 1\n"
+    busybox printf "  update-cmdline [target] [string]     Update boot command line\n"
     exit 1
 }
 
@@ -37,6 +40,18 @@ case "$CMD" in
         TGT=$1; KERN=$2
         busybox printf "Updating kernel in %s...\n" "$TGT"
         busybox dd if="$KERN" of="$TGT" bs=512 seek=1 conv=notrunc status=none
+        busybox printf "Update complete.\n"
+        ;;
+    update-cmdline)
+        [ $# -ne 2 ] && usage
+        TGT=$1; STR=$2
+        busybox printf "Updating cmdline in %s to: '%s'\n" "$TGT" "$STR"
+        # Create a 64-byte block with the string, padded with zeros
+        # We use a temporary file for safety in BusyBox sh
+        busybox printf "%s" "$STR" > .cmd.tmp
+        busybox dd if=/dev/zero bs=1 count=64 >> .cmd.tmp 2>/dev/null
+        busybox dd if=.cmd.tmp of="$TGT" bs=1 count=64 seek=$CMDLINE_OFFSET conv=notrunc status=none
+        busybox rm .cmd.tmp
         busybox printf "Update complete.\n"
         ;;
     *)
